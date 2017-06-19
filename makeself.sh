@@ -186,6 +186,11 @@ LSM_CMD="echo No LSM. >> \"\$archname\""
 while true
 do
     case "$1" in
+    --secret-env)
+        SSL_SECRET_ENV="${2:?Please provide the name of the env that contains the secret}"
+        if ! shift 2; then MS_Help; exit 1; fi
+        echo "Using secret stored in ${SSL_SECRET_ENV}"
+        ;;
     --version | -v)
 	echo Makeself version $MS_VERSION
 	exit 0
@@ -470,8 +475,13 @@ gpg-asymmetric)
     GUNZIP_CMD="gpg --yes -d"
     ;;
 openssl)
-    GZIP_CMD="openssl aes-256-cbc -a -salt"
-    GUNZIP_CMD="openssl aes-256-cbc -d -a"
+    if [ -z ${SSL_SECRET_ENV+x} ]; then
+        password_option=""
+    else
+        password_option="-pass env:${SSL_SECRET_ENV}"
+    fi
+    GZIP_CMD="openssl aes-256-cbc -a -salt ${password_option}"
+    GUNZIP_CMD="openssl aes-256-cbc -d -a ${password_option}"
     ;;
 Unix)
     GZIP_CMD="compress -cf"
